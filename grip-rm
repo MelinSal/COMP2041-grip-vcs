@@ -1,0 +1,116 @@
+#!/usr/bin/env python3
+
+# COMP2041/9044 Assignment2
+# grip-rm
+#
+# This program was written by Melina Salardini (z5393518)
+# on july 27, 2024
+#
+# it should delete the file from the index or index and repositary
+
+import os
+import sys
+
+# Get the latest commit directory
+def get_latest_commit_dir():
+    if not os.path.exists(commit_dir):
+        return None
+
+    commit_numbers = sorted([int(d.split('_')[1])
+                             for d in os.listdir(commit_dir)
+                             if d.startswith('commit_')])
+    if not commit_numbers:
+        return None
+
+    latest_commit_number = commit_numbers[-1]
+    return os.path.join(commit_dir, f'commit_{latest_commit_number}')
+
+
+# function to check if a file has uncommitted changes
+def has_staged_changes(filename):
+    file_in_index = os.path.join(index_dir, filename)
+    latest_commit_dir = get_latest_commit_dir()
+    file_in_latest_commit = os.path.join(latest_commit_dir, filename)
+    if os.path.exists(file_in_index) and os.path.exists(file_in_latest_commit):
+        return open(file_in_index).read() != open(file_in_latest_commit).read()
+    return True
+
+# function to check if there is staged changes in the index
+def has_dir_and_index_changes(filename):
+    file_in_index = os.path.join(index_dir, filename)
+    file_in_dir = filename
+    if os.path.exists(file_in_dir) and os.path.exists(file_in_index):
+        return open(file_in_index).read() != open(file_in_dir).read()
+    return True
+
+# function to mark a file for staged deletion in the index
+def mark_for_staged_deletion(filename):
+    file_in_index = os.path.join(index_dir, filename)
+    if os.path.exists(file_in_index):
+        os.rename(file_in_index, f"{file_in_index}?")
+
+
+grip_dir = '.grip'
+index_dir = os.path.join(grip_dir, 'index')
+commit_dir = os.path.join(grip_dir, 'commits')
+
+# check if the .grip dir exists
+if not os.path.exists(grip_dir):
+    print(f"grip-rm: error: grip repository directory .grip not found",
+          file=sys.stderr)
+    sys.exit(1)
+
+force = False
+cached = False
+filenames = []
+
+for arg in sys.argv[1:]:
+    if arg == '--force':
+        force = True
+    elif arg == '--cached':
+        cached = True
+    else:
+        filenames.append(arg)
+
+
+# check the number of arguments
+if not filenames:
+    print(f"usage: grip-rm [--force] [--cached] <filenames>", file=sys.stderr)
+    sys.exit(1)
+
+
+# remove the file
+for filename in filenames:
+    file_in_index = os.path.join(index_dir, filename)
+    file_in_dir = filename
+
+    if not os.path.exists(file_in_index):
+        print(f"grip-rm: error: '{filename}' is not in the grip repository",
+              file=sys.stderr)
+        sys.exit(1)
+
+    if not force and has_dir_and_index_changes(filename)and has_staged_changes(filename):
+        print(f"grip-rm: error: '{filename}' in index is different "
+              "to both the working file and the repository", file=sys.stderr)
+        sys.exit(1)
+
+    if not force and not cached and has_dir_and_index_changes(filename):
+        print(f"grip-rm: error: '{filename}' in the repository "
+              "is different to the working file", file=sys.stderr)
+        sys.exit(1)
+
+    if not force and not cached and has_staged_changes(filename):
+        print(f"grip-rm: error: '{filename}' has staged "
+              "changes in the index", file=sys.stderr)
+        sys.exit(1)
+
+
+    if cached:
+        mark_for_staged_deletion(filename)
+    else:
+        if os.path.exists(file_in_dir):
+            os.remove(file_in_dir)
+        mark_for_staged_deletion(filename)
+
+
+    

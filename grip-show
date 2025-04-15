@@ -1,0 +1,67 @@
+#!/usr/bin/env python3
+
+# COMP2041/9044 Assignment2
+# grip-show
+#
+# This program was written by Melina Salardini (z5393518)
+# on july 21, 2024
+#
+# it should show the content of the specific filename in a spesific commit
+
+import os
+import sys
+
+grip_dir = '.grip'
+index_dir = os.path.join(grip_dir, 'index')
+commits_dir = os.path.join(grip_dir, 'commits')
+
+# check if the .grip dir exists
+if not os.path.exists(grip_dir):
+    print(f"grip-show: error: grip repository directory .grip not found",
+          file=sys.stderr)
+    sys.exit(1)
+
+# check the correct number of arguments
+if len(sys.argv) < 2:
+    print(f"usage: grip-show <commit>:<filename>", file=sys.stderr)
+    sys.exit(1)
+
+
+# extract the filename and the commit from the argument
+commit, filename = sys.argv[1].split(':', 1)
+empty = ""
+# if commit is ommited look in to the index_dir
+if commit is empty:
+    file_path = os.path.join(index_dir, filename)
+    # error check if the filename doesnt exists in the index dir
+    if not os.path.isfile(file_path):
+        print(f"grip-show: error: '{filename}' not found in index",
+              file=sys.stderr)
+        sys.exit(1)
+
+# if its not look into commits_dir
+else:
+    commit = int(commit)
+    commit_dir = os.path.join(commits_dir, f"commit_{commit}")
+    # error check when the commit doesnt exists
+    if not os.path.exists(commit_dir):
+        print(f"grip-show: error: unknown commit '{commit}'", file=sys.stderr)
+        sys.exit(1)
+
+
+    file_path = os.path.join(commit_dir, filename)
+    # error check for when the filename doesnt exists in the commit
+    if not os.path.isfile(file_path):
+        print(f"grip-show: error: '{filename}' not found in commit {commit}",
+              file=sys.stderr)
+        sys.exit(1)         
+
+
+try:
+    with open(file_path, 'r') as file:
+        content = file.read()
+        print(content, end="")
+
+except Exception as e:
+        print(f"grip-show: error: {e}", file=sys.stderr)
+        sys.exit(1)

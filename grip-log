@@ -1,0 +1,49 @@
+#!/usr/bin/env python3
+
+# COMP2041/9044 Assignment2
+# grip-log
+#
+# This program was written by Melina Salardini (z5393518)
+# on july 21, 2024
+#
+# it should print a line for every commit added to the repositary
+
+import os
+import sys
+
+grip_dir = '.grip'
+commits_dir = os.path.join(grip_dir, 'commits')
+
+# check if the .grip dir exists
+if not os.path.exists(grip_dir):
+    print(f"grip-log: error: grip repository directory .grip not found",
+          file=sys.stderr)
+    sys.exit(1)
+
+
+# check if there is no commit dir
+if not os.path.exists(commits_dir):
+    print("", end='')
+    sys.exit(1)
+
+try:
+    # sort dirs with their numbers
+    commit_dirs = sorted([d for d in os.listdir(commits_dir)
+                          if d.startswith("commit_")],
+                          key=lambda x: int(x.split('_')[1]), reverse=True)
+    for commit_dir in commit_dirs:
+        commit_path = os.path.join(commits_dir, commit_dir)
+        commit_msg_file = os.path.join(commit_path, "commit_massage.txt")
+
+        if os.path.exists(commit_msg_file):
+            # get the commmit massege
+            with open(commit_msg_file, 'r') as f:
+                commit_msg = f.read().strip()
+            # get the commit number
+            commit_number = commit_dir.split('_')[1]
+            print(f"{commit_number} {commit_msg}")
+
+except Exception as e:
+        print(f"grip-log: error: {e}", file=sys.stderr)
+        sys.exit(1)
+

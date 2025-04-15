@@ -1,0 +1,70 @@
+#!/usr/bin/env python3
+
+# COMP2041/9044 Assignment2
+# grip-add
+#
+# This program was written by Melina Salardini (z5393518)
+# on july 14, 2024
+#
+# it should add the content of one or more files into "index"
+# in .grip sub directory
+
+import os
+import sys
+import shutil
+import re
+
+# function to check if the filename is valid or not
+def is_valid_filename(filename):
+    if not re.match(r'^[a-zA-Z0-9]', filename):
+        return False
+    if not re.match(r'^[a-zA-Z0-9\.\-\_]+$', filename):
+        return False
+    return True
+
+
+
+grip_dir = '.grip'
+index_dir = os.path.join(grip_dir, 'index')
+
+# check if the .grip dir exists
+if not os.path.exists(grip_dir):
+    print(f"grip-add: error: grip repository directory .grip not found",
+          file=sys.stderr)
+    sys.exit(1)
+
+
+# check correct number of arguments
+if len(sys.argv) < 2:
+    print(f"usage: grip-add <filenames>")
+    sys.exit(1)
+
+files = sys.argv[1:]
+
+# create the index dir if it doesnt exists
+if not os.path.exists(index_dir):
+    os.mkdir(index_dir)
+
+for file in files:
+    # check if the filename is valid
+    filename = os.path.basename(file)
+    if not is_valid_filename(filename):
+        print(f"grip-add: error: invalid filename '{filename}'", file=sys.stderr)
+        sys.exit(1)
+
+    file_in_index = os.path.join(index_dir, filename)
+    marked_file_in_index = os.path.join(index_dir, f"{filename}?")
+
+    try:
+        # if the file is not in the dir but its in the index mark it for delete
+        if not os.path.exists(file) and os.path.exists(file_in_index):
+            os.rename(file_in_index, f'{file_in_index}?')
+        # otherwise add it to the index dir
+        elif os.path.exists(file):
+            shutil.copy(file, file_in_index)
+        else:
+            print(f"grip-add: error: can not open '{file}'", file=sys.stderr)
+            sys.exit(1)
+    except Exception as e:
+        print(f"grip-add: error: {e}", file=sys.stderr)
+        sys.exit(1)
